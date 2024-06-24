@@ -204,12 +204,12 @@ V_n = ['the', 'and', 'a', 'in', 'of', 'to', 'is', 'was', 'it', 'for'] #read from
 alpha = 0.001
 beta = 0.9
 eta = 0.001
-T = 100
+T = 10
 l = 50
 lambda_rec = 1.0
 lambda_g = 1.0
 lambda_KL = 0.1
-batch_size = 64
+batch_size = 512
 gamma = 1.0
 lambda_debias = 0.1
 
