@@ -185,7 +185,7 @@ def debias_embeddings(emb, V_f, V_m, V_s, V_n, alpha, beta, eta, T, l, lambda_re
             _, _, _, _, z = vae(E_reweighted, pseudo_labels)
             histogram_approximator.update(z.cpu())
 
-        if t % 10 == 0:
+        if t % 100 == 0:
             print(f"Epoch {t}: Loss = {total_loss.item()}, L_g1 = {L_g1.item()}, L_b = {L_b.item()}, L_debias = {L_debias.item()}")
 
     # Use the final reweighted embeddings
@@ -204,7 +204,7 @@ V_n = ['the', 'and', 'a', 'in', 'of', 'to', 'is', 'was', 'it', 'for'] #read from
 alpha = 0.0001
 beta = 0.9
 eta = 0.001
-T = 10
+T = 100
 l = 50
 lambda_rec = 1.0
 lambda_g = 1.0
