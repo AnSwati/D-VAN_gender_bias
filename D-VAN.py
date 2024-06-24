@@ -201,7 +201,7 @@ V_s = ['nurse', 'teacher', 'cook', 'clerk', 'assistant', 'homemaker', 'librarian
        'engineer', 'scientist', 'programmer', 'doctor', 'lawyer', 'researcher', 'manager', 'boss', 'executive', 'mathematician'] #use professions.json
 V_n = ['the', 'and', 'a', 'in', 'of', 'to', 'is', 'was', 'it', 'for'] #read from online
 
-alpha = 0.0001
+alpha = 0.001
 beta = 0.9
 eta = 0.001
 T = 10
