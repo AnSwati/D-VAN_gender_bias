@@ -4,16 +4,17 @@ import torch.nn.functional as F
 from torch.optim import Adam
 from torchtext.vocab import GloVe
 
+
 class Encoder(nn.Module):
     def __init__(self, input_dim, hidden_dim, latent_dim):
         super(Encoder, self).__init__()
-        self.fc1 = nn.Linear(input_dim, hidden_dim)
+        self.fc1 = nn.Linear(input_dim + 1, hidden_dim)  # +1 for the pseudo-label
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.fc_mu = nn.Linear(hidden_dim, latent_dim)
         self.fc_logvar = nn.Linear(hidden_dim, latent_dim)
 
-    def forward(self, x):
-        h = F.relu(self.fc1(x))
+    def forward(self, x, y):
+        h = F.relu(self.fc1(torch.cat((x, y.unsqueeze(1)), dim=1)))  # concatenate pseudo-label
         h = F.relu(self.fc2(h))
         mu = self.fc_mu(h)
         logvar = self.fc_logvar(h)
@@ -53,17 +54,18 @@ class VAE(nn.Module):
         eps = torch.randn_like(std)
         return eps * std + mu
 
-    def forward(self, x, y=None):  # y is optional now
-        mu, logvar = self.encoder(x)
+    def forward(self, x, y):
+        mu, logvar = self.encoder(x, y)
         z = self.reparameterize(mu, logvar)
         reconstruction = self.decoder(z)
         gender_pred = self.gender_classifier(z)
         return reconstruction, gender_pred, mu, logvar, z
 
     def q_z_given_xy(self, x, y):
-        mu, logvar = self.encoder(x)
+        mu, logvar = self.encoder(x, y)
         z = self.reparameterize(mu, logvar)
         return z, mu, logvar
+
 
 class HistogramApproximator:
     def __init__(self, num_bins=100, range_min=-5, range_max=5):
@@ -72,20 +74,23 @@ class HistogramApproximator:
         self.range_max = range_max
         self.histograms = None
 
-    def update(self, z):
+    def update(self, z, y):
         if self.histograms is None:
-            self.histograms = [torch.zeros(self.num_bins) for _ in range(z.shape[1])]
-        
-        for i in range(z.shape[1]):
-            hist, _ = torch.histogram(z[:, i], bins=self.num_bins, range=(self.range_min, self.range_max))
-            self.histograms[i] += hist
+            self.histograms = [torch.zeros((2, self.num_bins)) for _ in range(z.shape[1])]  # 2 bins for y = 0 and y = 1
 
-    def get_probabilities(self, z):
+        for i in range(z.shape[1]):
+            for j in range(2):
+                hist, _ = torch.histogram(z[y == j, i], bins=self.num_bins, range=(self.range_min, self.range_max))
+                self.histograms[i][j] += hist
+
+    def get_probabilities(self, z, y):
         probs = torch.ones(z.shape[0], device=z.device)
         for i in range(z.shape[1]):
-            indices = torch.clamp(((z[:, i] - self.range_min) / (self.range_max - self.range_min) * self.num_bins).long(), 0, self.num_bins - 1)
-            probs *= self.histograms[i][indices] + 1e-10  # Add small constant to avoid division by zero
+            for j in range(2):
+                indices = torch.clamp(((z[y == j, i] - self.range_min) / (self.range_max - self.range_min) * self.num_bins).long(), 0, self.num_bins - 1)
+                probs[y == j] *= self.histograms[i][j][indices] + 1e-10  # Add small constant to avoid division by zero
         return probs
+
 
 def kl_divergence(mu, logvar):
     return -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
@@ -119,13 +124,13 @@ def debias_embeddings(emb, V_f, V_m, V_s, V_n, alpha, beta, eta, T, l, lambda_re
     # Initial histogram approximation
     with torch.no_grad():
         _, _, _, _, z = vae(E, pseudo_labels)
-        histogram_approximator.update(z.cpu())
+        histogram_approximator.update(z.cpu(), pseudo_labels.cpu())
 
     for t in range(1, T + 1):
         # Reweighting step
         with torch.no_grad():
             _, _, _, _, z = vae(E, pseudo_labels)
-            probs = histogram_approximator.get_probabilities(z)
+            probs = histogram_approximator.get_probabilities(z, pseudo_labels)
             probs = torch.clamp(probs, min=1e-10)
             probs = probs / probs.sum()
             weights = 1 / (probs + alpha)
@@ -145,25 +150,25 @@ def debias_embeddings(emb, V_f, V_m, V_s, V_n, alpha, beta, eta, T, l, lambda_re
         y_batch = pseudo_labels[indices]
 
         reconstruction, gender_pred, mu, logvar, z = vae(E_batch, y_batch)
-        
+
         recon_loss = F.mse_loss(reconstruction, E_batch)
         kl_loss = kl_divergence(mu, logvar)
         L_g1 = F.binary_cross_entropy(gender_pred.squeeze(), y_batch)
-        
+
         L_b = torch.tensor(0.0, device=device)
         for w_f, w_m in gender_pairs:
             if emb.stoi.get(w_f) is not None and emb.stoi.get(w_m) is not None:
                 z_f, _, _ = vae.q_z_given_xy(E_reweighted[emb.stoi[w_f]].unsqueeze(0), torch.tensor([0], device=device))
                 z_m, _, _ = vae.q_z_given_xy(E_reweighted[emb.stoi[w_m]].unsqueeze(0), torch.tensor([1], device=device))
-                
+
                 gender_pred_f = vae.gender_classifier(z_f)
                 gender_pred_m = vae.gender_classifier(z_m)
-                
+
                 L_b += (gender_pred_f.mean() - gender_pred_m.mean()).pow(2)
-        
+
         L_b = L_b / len(gender_pairs) if gender_pairs else torch.tensor(0.0, device=device)
         L_g = L_g1 + gamma * L_b
-        
+
         L_debias = torch.tensor(0.0, device=device)
         for w in V_s:
             if w in emb.stoi and emb.stoi[w] in indices:
@@ -183,7 +188,7 @@ def debias_embeddings(emb, V_f, V_m, V_s, V_n, alpha, beta, eta, T, l, lambda_re
         # Update histogram approximator
         with torch.no_grad():
             _, _, _, _, z = vae(E_reweighted, pseudo_labels)
-            histogram_approximator.update(z.cpu())
+            histogram_approximator.update(z.cpu(), pseudo_labels.cpu())
 
         if t % 100 == 0:
             print(f"Epoch {t}: Loss = {total_loss.item()}, L_g1 = {L_g1.item()}, L_b = {L_b.item()}, L_debias = {L_debias.item()}")
