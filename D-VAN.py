@@ -67,6 +67,10 @@ class VAE(nn.Module):
         return z, mu, logvar
 
 
+def smooth_abs(x, epsilon=1e-8):
+    return torch.sqrt(x**2 + epsilon)
+
+
 class HistogramApproximator:
     def __init__(self, num_bins=100, range_min=-5, range_max=5):
         self.num_bins = num_bins
@@ -176,7 +180,7 @@ def debias_embeddings(emb, V_f, V_m, V_s, V_n, alpha, beta, eta, T, l, lambda_re
                 if e_w.shape[0] > 0:
                     s_f = cosine_similarity(e_w.mean(dim=0), v_f)
                     s_m = cosine_similarity(e_w.mean(dim=0), v_m)
-                    L_debias += torch.abs(torch.tensor(s_f, device=device)- torch.tensor(s_m, device=device))
+                    L_debias += smooth_abs(torch.tensor(s_f, device=device) - torch.tensor(s_m, device=device))
         L_debias = L_debias / len(V_s) if V_s else torch.tensor(0.0, device=device)
 
         total_loss = lambda_rec * recon_loss + lambda_KL * kl_loss + lambda_g * L_g + lambda_debias * L_debias
