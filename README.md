@@ -119,3 +119,20 @@ Standard PyTorch operations for gradient calculation and parameter updates.
 
 
 This code aims to learn a debiased latent representation of word embeddings by balancing reconstruction accuracy, gender neutrality, and preservation of non-gendered semantic information. It uses a VAE architecture with an additional gender classifier to achieve this, along with a reweighting scheme based on the estimated latent distribution.
+
+If you like my work please do proper citation : 
+
+@article{TYAGI2024100283,
+title = {Enhancing gender equity in resume job matching via debiasing-assisted deep generative model and gender-weighted sampling},
+journal = {International Journal of Information Management Data Insights},
+volume = {4},
+number = {2},
+pages = {100283},
+year = {2024},
+issn = {2667-0968},
+doi = {https://doi.org/10.1016/j.jjimei.2024.100283},
+url = {https://www.sciencedirect.com/science/article/pii/S2667096824000727},
+author = {Swati Tyagi and  Anuj and Wei Qian and Jiaheng Xie and Rick Andrews},
+keywords = {Supervised learning, Natural language processing, Algorithmic fairness, Gender bias, Online recruiting, Compounding injustices, Automated recruitment, Mitigating bias, Equality of opportunity},
+abstract = {Our work aims to mitigate gender bias within word embeddings and investigates the effects of these adjustments on enhancing fairness in resume job-matching problems. By conducting a case study on resume data, we explore the prevalence of gender bias in job categorization—a significant barrier to equal career opportunities, particularly in the context of machine learning applications. This study scrutinizes how biased representations in job assignments, influenced by a variety of factors such as skills and resume descriptors within diverse semantic frameworks, affect the classification process. The investigation extends to the nuanced language of resumes and the presence of subtle gender biases, including the employment of gender-associated terms, and examines how these terms’ vector representations can skew fairness, leading to a disproportionate mapping of resumes to job categories based on gender. Our findings reveal a significant correlation between gender discrepancies in classification true positive rate and gender imbalances across professions that potentially deepen these disparities. The goal of this study is to (1) mitigate bias at the level of word embeddings via a debiasing-assisted deep generative modeling approach, thereby fostering more equitable and gender-fair vector representations; (2) evaluate the resultant impact on the fairness of job classification; (3) explore the implementation of a gender-weighted sampling technique to achieve a more balanced representation of genders across various job categories when such an imbalance exists. This approach involves modifying the data distribution according to gender before it is input into the classifier model, aiming to ensure equal opportunity and promote gender fairness in occupational classifications. The code for this paper is publicly available on GitHub.}
+}
