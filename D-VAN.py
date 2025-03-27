@@ -201,8 +201,8 @@ def debias_embeddings(emb, V_f, V_m, V_s, V_n, alpha, beta, eta, T, l, lambda_re
     emb_hat = {word: E_reweighted[i].cpu().numpy() for i, word in enumerate(emb.itos)}
     return emb_hat
 
-# Load GloVe embeddings
-glove_embeddings = GloVe(name='6B', dim=300) #put 42B
+# Load  840B GloVe embeddings
+glove_embeddings = GloVe(name='6B', dim=300) 
 
 V_f = ['woman', 'girl', 'she', 'mother', 'daughter', 'her', 'female', 'sister', 'actress', 'grandmother'] #read female_word_file.txt
 V_m = ['man', 'boy', 'he', 'father', 'son', 'his', 'male', 'brother', 'actor', 'grandfather'] #read male_word_file.txt
