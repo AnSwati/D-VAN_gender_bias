@@ -204,23 +204,6 @@ def debias_embeddings(emb, V_f, V_m, V_s, V_n, alpha, beta, eta, T, l, lambda_re
 
 glove_embeddings = GloVe(name='840B', dim=300) 
 
-V_f = ['woman', 'girl', 'she', 'mother', 'daughter', 'her', 'female', 'sister', 'actress', 'grandmother'] #read female_word_file.txt
-V_m = ['man', 'boy', 'he', 'father', 'son', 'his', 'male', 'brother', 'actor', 'grandfather'] #read male_word_file.txt
-V_s = ['nurse', 'teacher', 'cook', 'clerk', 'assistant', 'homemaker', 'librarian', 'maid', 'hairdresser', 'receptionist',
-       'engineer', 'scientist', 'programmer', 'doctor', 'lawyer', 'researcher', 'manager', 'boss', 'executive', 'mathematician'] #use professions.json
-V_n = ['the', 'and', 'a', 'in', 'of', 'to', 'is', 'was', 'it', 'for'] #read from online
-
-alpha = 0.0005
-beta = 0.9
-eta = 0.001
-T = 100
-l = 50
-lambda_rec = 1.0
-lambda_g = 1.0
-lambda_KL = 0.1
-batch_size = 512
-gamma = 1.0
-lambda_debias = 0.1
 
 emb_hat = debias_embeddings(glove_embeddings, V_f, V_m, V_s, V_n, alpha, beta, eta, T, l, lambda_rec, lambda_g, lambda_KL, batch_size, gamma, lambda_debias)
 
